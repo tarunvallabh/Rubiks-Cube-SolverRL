@@ -32,6 +32,10 @@ class Cube:
             "Right": [self.cube_colors["orange"] for _ in range(4)],
         }
 
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection="3d")
+        plt.ion()  # Turn on interactive mode
+
     def is_solved(self):
         """Check if the cube is solved"""
         return all(len(set(face)) == 1 for face in self.faces.values())
@@ -61,6 +65,8 @@ class Cube:
         # back adjacent to up
         self.faces["Up"][0], self.faces["Up"][2] = back_edge[0], back_edge[1]
 
+        self.plot_cube()
+
         # no need to return self.faces since it is passed by reference
 
     def move_right(self):
@@ -81,6 +87,8 @@ class Cube:
         self.faces["Front"][1], self.faces["Front"][3] = down_edge[0], down_edge[1]
         # front adjacent to up
         self.faces["Up"][1], self.faces["Up"][3] = front_edge[0], front_edge[1]
+
+        self.plot_cube()
 
         # no need to return self.faces since it is passed by reference
 
@@ -104,6 +112,8 @@ class Cube:
         # Left's top edge goes to Front
         self.faces["Front"][0], self.faces["Front"][1] = left_edge[0], left_edge[1]
 
+        self.plot_cube()
+
     def move_down(self):
         self.rotate_face_clockwise(self.faces["Down"])
 
@@ -122,6 +132,8 @@ class Cube:
         self.faces["Left"][2], self.faces["Left"][3] = back_edge[0], back_edge[1]
         # Left adjacent to Front
         self.faces["Front"][2], self.faces["Front"][3] = left_edge[0], left_edge[1]
+
+        self.plot_cube()
 
     def move_front(self):
         self.rotate_face_clockwise(self.faces["Front"])
@@ -142,6 +154,8 @@ class Cube:
         self.faces["Left"][1], self.faces["Left"][3] = down_edge[0], down_edge[1]
         # Left's right edge goes to Up's bottom edge
         self.faces["Up"][2], self.faces["Up"][3] = left_edge[0], left_edge[1]
+
+        self.plot_cube()
 
     def move_back(self):
         self.rotate_face_clockwise(self.faces["Back"])
@@ -170,6 +184,8 @@ class Cube:
         self.faces["Right"][1], self.faces["Right"][3] = down_edge[0], down_edge[1]
         # Right's right edge goes to Up's top edge
         self.faces["Up"][0], self.faces["Up"][1] = right_edge[0], right_edge[1]
+
+        self.plot_cube()
 
     def __str__(self):
         """Visual representation of the cube in a 2D net format."""
@@ -232,45 +248,47 @@ class Cube:
         return "\n".join(lines)
 
     def plot_cube(self):
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
+        self.ax.clear()  # Clear the axes to redraw
 
         # Define sticker size
         sticker_size = 1  # Adjust as needed
 
         # Define the positions for each face
         positions = {
-            "Front": (0, 0, 1),
-            "Back": (0, 0, -1),
-            "Up": (0, 1, 0),
-            "Down": (0, -1, 0),
-            "Left": (-1, 0, 0),
-            "Right": (1, 0, 0),
+            "Front": (0, 0, 1),  # Front face at positive Z-axis
+            "Back": (0, 0, -1),  # Back face at negative Z-axis
+            "Up": (0, 1, 0),  # Up face at positive Y-axis (remains the same)
+            "Down": (0, -1, 0),  # Down face at negative Y-axis
+            "Left": (-1, 0, 0),  # Left face at negative X-axis
+            "Right": (1, 0, 0),  # Right face at positive X-axis
         }
 
         # Define the orientations for each face
         orientations = {
-            "Front": (0, 0),
-            "Back": (0, np.pi),
-            "Up": (-np.pi / 2, 0),
-            "Down": (np.pi / 2, 0),
-            "Left": (0, -np.pi / 2),
-            "Right": (0, np.pi / 2),
+            "Front": (0, 0),  # No rotation needed
+            "Back": (0, np.pi),  # Rotate 180 degrees around Y-axis
+            "Up": (-np.pi / 2, 0),  # Rotate -90 degrees around X-axis
+            "Down": (np.pi / 2, 0),  # Rotate 90 degrees around X-axis
+            "Left": (0, np.pi / 2),  # Rotate 90 degrees around Y-axis
+            "Right": (0, -np.pi / 2),  # Rotate -90 degrees around Y-axis
         }
 
         for face in self.faces:
-            self.plot_face(ax, face, positions[face], orientations[face], sticker_size)
+            self.plot_face(
+                self.ax, face, positions[face], orientations[face], sticker_size
+            )
 
         # Set the aspect ratio to 'auto' to prevent distortion
-        ax.set_box_aspect([1, 1, 1])
+        self.ax.set_box_aspect([1, 1, 1])
 
         # Hide the axes
-        ax.axis("off")
+        self.ax.axis("off")
 
-        # Set the viewing angle
-        ax.view_init(elev=30, azim=30)
+        # Set the viewing angle so that the 'Front' face is facing the viewer
+        self.ax.view_init(elev=90, azim=-90)
 
-        plt.show()
+        plt.draw()
+        plt.pause(1)  # Pause to allow the plot to update
 
     def plot_face(self, ax, face_name, position, orientation, sticker_size):
         # Get the colors for the face's stickers
@@ -334,6 +352,9 @@ if __name__ == "__main__":
     print(cube)
     print("\nIs solved:", cube.is_solved())
 
+    # Initial plot
+    cube.plot_cube()
+
     print("\nPerforming some moves...")
     # cube.move_right()
     # cube.move_up()
@@ -343,5 +364,6 @@ if __name__ == "__main__":
     print(cube)
     print("\nIs solved:", cube.is_solved())
 
-    # Plot the cube in 3D
-    cube.plot_cube()
+    # Keep the plot open
+    plt.ioff()  # Turn off interactive mode
+    plt.show()
