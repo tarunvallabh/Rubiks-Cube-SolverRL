@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d import Axes3D
+import itertools
 import numpy as np
+import re
 
 
 class Cube:
@@ -15,14 +17,15 @@ class Cube:
         }
 
         self.color_list = [
-            (1, 1, 1),  # 0: White
-            (1, 1, 0),  # 1: Yellow
-            (0, 1, 0),  # 2: Green
-            (0, 0, 1),  # 3: Blue
-            (1, 0, 0),  # 4: Red
-            (1, 0.5, 0),  # 5: Orange
+            "white",  # 0: White
+            "yellow",  # 1: Yellow
+            "green",  # 2: Green
+            "blue",  # 3: Blue
+            "red",  # 4: Red
+            "orange",  # 5: Orange
         ]
 
+        # Initialize solved cube state
         self.faces = {
             "Up": [self.cube_colors["white"] for _ in range(4)],
             "Down": [self.cube_colors["yellow"] for _ in range(4)],
@@ -32,14 +35,175 @@ class Cube:
             "Right": [self.cube_colors["orange"] for _ in range(4)],
         }
 
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(111, projection="3d")
         plt.ion()  # Turn on interactive mode
 
-    def is_solved(self):
-        """Check if the cube is solved"""
-        return all(len(set(face)) == 1 for face in self.faces.values())
+    def plot_3d_cube(self):
+        """Plot the cube in 3D using our previous visualization code"""
+        self.ax.cla()  # Clear the current plot
 
+        # Convert face names to match our 3D visualization names
+        face_mapping = {
+            "Up": "top",
+            "Down": "bottom",
+            "Front": "front",
+            "Back": "back",
+            "Left": "left",
+            "Right": "right",
+        }
+
+        def plot_colored_face(ax, vertices, color, alpha=1):
+            vertices = np.array(vertices)
+            ax.plot_surface(
+                vertices[:, :, 0],
+                vertices[:, :, 1],
+                vertices[:, :, 2],
+                color=color,
+                alpha=alpha,
+                edgecolor="black",
+                linewidth=0.5,
+            )
+
+        def plot_cube(ax, position, colors):
+            x, y, z = position
+            size = 1
+
+            faces_vertices = {
+                "front": np.array(
+                    [
+                        [[x, y, z], [x + size, y, z]],
+                        [[x, y, z + size], [x + size, y, z + size]],
+                    ]
+                ),
+                "back": np.array(
+                    [
+                        [[x, y + size, z], [x + size, y + size, z]],
+                        [[x, y + size, z + size], [x + size, y + size, z + size]],
+                    ]
+                ),
+                "left": np.array(
+                    [
+                        [[x, y + size, z], [x, y, z]],
+                        [[x, y + size, z + size], [x, y, z + size]],
+                    ]
+                ),
+                "right": np.array(
+                    [
+                        [[x + size, y, z], [x + size, y + size, z]],
+                        [[x + size, y, z + size], [x + size, y + size, z + size]],
+                    ]
+                ),
+                "top": np.array(
+                    [
+                        [[x, y, z + size], [x + size, y, z + size]],
+                        [[x, y + size, z + size], [x + size, y + size, z + size]],
+                    ]
+                ),
+                "bottom": np.array(
+                    [
+                        [[x, y, z], [x + size, y, z]],
+                        [[x, y + size, z], [x + size, y + size, z]],
+                    ]
+                ),
+            }
+
+            for face, color_idx in colors.items():
+                if color_idx is not None:
+                    plot_colored_face(
+                        ax, faces_vertices[face], self.color_list[color_idx]
+                    )
+
+        # Define cube configurations based on the current face states
+        cube_configs = [
+            # Front face, top row (left to right)
+            {
+                "pos": (0, 0, 1),
+                "colors": {
+                    "front": self.faces["Front"][0],
+                    "left": self.faces["Left"][1],
+                    "top": self.faces["Up"][2],
+                },
+            },
+            {
+                "pos": (1, 0, 1),
+                "colors": {
+                    "front": self.faces["Front"][1],
+                    "right": self.faces["Right"][0],
+                    "top": self.faces["Up"][3],
+                },
+            },
+            # Front face, bottom row
+            {
+                "pos": (0, 0, 0),
+                "colors": {
+                    "front": self.faces["Front"][2],
+                    "left": self.faces["Left"][3],
+                    "bottom": self.faces["Down"][0],
+                },
+            },
+            {
+                "pos": (1, 0, 0),
+                "colors": {
+                    "front": self.faces["Front"][3],
+                    "right": self.faces["Right"][2],
+                    "bottom": self.faces["Down"][0],
+                },
+            },
+            # Back face, top row
+            {
+                "pos": (0, 1, 1),
+                "colors": {
+                    "back": self.faces["Back"][0],
+                    "left": self.faces["Left"][0],
+                    "top": self.faces["Up"][0],
+                },
+            },
+            {
+                "pos": (1, 1, 1),
+                "colors": {
+                    "back": self.faces["Back"][1],
+                    "right": self.faces["Right"][1],
+                    "top": self.faces["Up"][1],
+                },
+            },
+            # Back face, bottom row
+            {
+                "pos": (0, 1, 0),
+                "colors": {
+                    "back": self.faces["Back"][2],
+                    "left": self.faces["Left"][2],
+                    "bottom": self.faces["Down"][2],
+                },
+            },
+            {
+                "pos": (1, 1, 0),
+                "colors": {
+                    "back": self.faces["Back"][3],
+                    "right": self.faces["Right"][3],
+                    "bottom": self.faces["Down"][3],
+                },
+            },
+        ]
+
+        # Plot all cubes
+        for config in cube_configs:
+            plot_cube(self.ax, config["pos"], config["colors"])
+
+        self.ax.set_box_aspect([2, 2, 2])
+        self.ax.set_xlabel("X")
+        self.ax.set_ylabel("Y")
+        self.ax.set_zlabel("Z")
+        self.ax.set_xlim(0, 2)
+        self.ax.set_ylim(0, 2)
+        self.ax.set_zlim(0, 2)
+        self.ax.view_init(elev=20, azim=30)
+
+        plt.title("2x2x2 Rubik's Cube")
+        plt.draw()
+        plt.pause(0.01)
+
+    # [All the existing move methods (move_left, move_right, etc.) remain the same]
     def rotate_face_clockwise(self, face):
         face[0], face[1], face[2], face[3] = face[2], face[0], face[3], face[1]
 
@@ -56,18 +220,12 @@ class Cube:
         back_edge = [self.faces["Back"][0], self.faces["Back"][2]]
 
         # update the edge pieces
-        # up adjacent to front
         self.faces["Front"][0], self.faces["Front"][2] = up_edge[0], up_edge[1]
-        # front adjacent to down
         self.faces["Down"][0], self.faces["Down"][2] = front_edge[0], front_edge[1]
-        # down adjacent to back
         self.faces["Back"][0], self.faces["Back"][2] = down_edge[0], down_edge[1]
-        # back adjacent to up
         self.faces["Up"][0], self.faces["Up"][2] = back_edge[0], back_edge[1]
 
-        self.plot_cube()
-
-        # no need to return self.faces since it is passed by reference
+        self.plot_3d_cube()  # Use our 3D visualization instead
 
     def move_right(self):
         self.rotate_face_clockwise(self.faces["Right"])
@@ -88,7 +246,7 @@ class Cube:
         # front adjacent to up
         self.faces["Up"][1], self.faces["Up"][3] = front_edge[0], front_edge[1]
 
-        self.plot_cube()
+        self.plot_3d_cube()
 
         # no need to return self.faces since it is passed by reference
 
@@ -104,15 +262,15 @@ class Cube:
         # Update the edge pieces in clockwise order
         # Front adjacent to Left
         # Front's top edge goes to Right
-        self.faces["Right"][0], self.faces["Right"][1] = front_edge[0], front_edge[1]
+        self.faces["Left"][0], self.faces["Left"][1] = front_edge[0], front_edge[1]
         # Right's top edge goes to Back
-        self.faces["Back"][0], self.faces["Back"][1] = right_edge[0], right_edge[1]
+        self.faces["Back"][0], self.faces["Back"][1] = left_edge[0], left_edge[1]
         # Back's top edge goes to Left
-        self.faces["Left"][0], self.faces["Left"][1] = back_edge[0], back_edge[1]
+        self.faces["Right"][0], self.faces["Right"][1] = back_edge[0], back_edge[1]
         # Left's top edge goes to Front
-        self.faces["Front"][0], self.faces["Front"][1] = left_edge[0], left_edge[1]
+        self.faces["Front"][0], self.faces["Front"][1] = right_edge[0], right_edge[1]
 
-        self.plot_cube()
+        self.plot_3d_cube()
 
     def move_down(self):
         self.rotate_face_clockwise(self.faces["Down"])
@@ -133,7 +291,7 @@ class Cube:
         # Left adjacent to Front
         self.faces["Front"][2], self.faces["Front"][3] = left_edge[0], left_edge[1]
 
-        self.plot_cube()
+        self.plot_3d_cube()
 
     def move_front(self):
         self.rotate_face_clockwise(self.faces["Front"])
@@ -155,7 +313,7 @@ class Cube:
         # Left's right edge goes to Up's bottom edge
         self.faces["Up"][2], self.faces["Up"][3] = left_edge[0], left_edge[1]
 
-        self.plot_cube()
+        self.plot_3d_cube()
 
     def move_back(self):
         self.rotate_face_clockwise(self.faces["Back"])
@@ -185,185 +343,85 @@ class Cube:
         # Right's right edge goes to Up's top edge
         self.faces["Up"][0], self.faces["Up"][1] = right_edge[0], right_edge[1]
 
-        self.plot_cube()
+        self.plot_3d_cube()
 
-    def __str__(self):
-        """Visual representation of the cube in a 2D net format."""
-        colors_map = {
-            0: "W",  # White
-            1: "Y",  # Yellow
-            2: "G",  # Green
-            3: "B",  # Blue
-            4: "R",  # Red
-            5: "O",  # Orange
-        }
+    # [Add all other move methods here with same structure]
 
-        # Helper function to get the 2x2 grid for a face
-        def get_face_grid(face_name):
-            colors = self.faces[face_name]
-            grid = [
-                [colors_map[colors[0]], colors_map[colors[1]]],
-                [colors_map[colors[2]], colors_map[colors[3]]],
-            ]
-            return grid
+    def execute_move(self, move):
+        """Execute a single move on the cube."""
+        match = re.match(r"([FBLRUD])(\d*)", move.strip().upper())
+        if not match:
+            print(f"Invalid move: {move}")
+            return
 
-        # Get grids for each face
-        up = get_face_grid("Up")
-        down = get_face_grid("Down")
-        left = get_face_grid("Left")
-        right = get_face_grid("Right")
-        front = get_face_grid("Front")
-        back = get_face_grid("Back")
+        face, repetition = match.groups()
+        repetition = int(repetition) if repetition else 1
 
-        # Build the output lines
-        lines = []
+        for _ in range(repetition):
+            if face == "F":
+                self.move_front()
+            elif face == "B":
+                self.move_back()
+            elif face == "L":
+                self.move_left()
+            elif face == "R":
+                self.move_right()
+            elif face == "U":
+                self.move_up()
+            elif face == "D":
+                self.move_down()
 
-        # First, print the Up face centered
-        blank = " " * 6  # Adjust spaces as needed
-        lines.append(blank + " ".join(up[0]))
-        lines.append(blank + " ".join(up[1]))
-        lines.append("")  # Empty line for spacing
+    def execute_move_sequence(self, moves):
+        """Execute a sequence of moves on the cube."""
+        if "," in moves:
+            move_list = moves.split(",")
+            for move in move_list:
+                self.execute_move(move)
+        else:
+            self.execute_move(moves)
 
-        # Then, print Left, Front, Right, Back faces in a row
-        for row in range(2):
-            line = []
-            # Left face
-            line.extend(left[row])
-            line.append(" ")  # Space between faces
-            # Front face
-            line.extend(front[row])
-            line.append(" ")
-            # Right face
-            line.extend(right[row])
-            line.append(" ")
-            # Back face
-            line.extend(back[row])
-            lines.append(" ".join(line))
-        lines.append("")  # Empty line for spacing
-
-        # Then, print the Down face centered
-        lines.append(blank + " ".join(down[0]))
-        lines.append(blank + " ".join(down[1]))
-
-        return "\n".join(lines)
-
-    def plot_cube(self):
-        self.ax.clear()  # Clear the axes to redraw
-
-        # Define sticker size
-        sticker_size = 1  # Adjust as needed
-
-        # Define the positions for each face
-        positions = {
-            "Front": (0, 0, 1),  # Front face at positive Z-axis
-            "Back": (0, 0, -1),  # Back face at negative Z-axis
-            "Up": (0, 1, 0),  # Up face at positive Y-axis (remains the same)
-            "Down": (0, -1, 0),  # Down face at negative Y-axis
-            "Left": (-1, 0, 0),  # Left face at negative X-axis
-            "Right": (1, 0, 0),  # Right face at positive X-axis
-        }
-
-        # Define the orientations for each face
-        orientations = {
-            "Front": (0, 0),  # No rotation needed
-            "Back": (0, np.pi),  # Rotate 180 degrees around Y-axis
-            "Up": (-np.pi / 2, 0),  # Rotate -90 degrees around X-axis
-            "Down": (np.pi / 2, 0),  # Rotate 90 degrees around X-axis
-            "Left": (0, np.pi / 2),  # Rotate 90 degrees around Y-axis
-            "Right": (0, -np.pi / 2),  # Rotate -90 degrees around Y-axis
-        }
-
-        for face in self.faces:
-            self.plot_face(
-                self.ax, face, positions[face], orientations[face], sticker_size
-            )
-
-        # Set the aspect ratio to 'auto' to prevent distortion
-        self.ax.set_box_aspect([1, 1, 1])
-
-        # Hide the axes
-        self.ax.axis("off")
-
-        # Set the viewing angle so that the 'Front' face is facing the viewer
-        self.ax.view_init(elev=90, azim=-90)
-
-        plt.draw()
-        plt.pause(1)  # Pause to allow the plot to update
-
-    def plot_face(self, ax, face_name, position, orientation, sticker_size):
-        # Get the colors for the face's stickers
-        face_colors = [
-            self.color_list[color_idx] for color_idx in self.faces[face_name]
-        ]
-
-        # Define the sticker positions on the face
-        sticker_positions = [
-            (-0.5, 0.5),  # Top-left
-            (0.5, 0.5),  # Top-right
-            (-0.5, -0.5),  # Bottom-left
-            (0.5, -0.5),  # Bottom-right
-        ]
-
-        # Create a square for each sticker
-        for idx, (x, y) in enumerate(sticker_positions):
-            # Define the square in 2D
-            s = sticker_size / 2
-            square = np.array(
-                [[x - s, y - s], [x - s, y + s], [x + s, y + s], [x + s, y - s]]
-            )
-
-            # Rotate the square according to the face orientation
-            theta, phi = orientation
-            # Rotation matrices
-            R_theta = np.array(
-                [
-                    [1, 0, 0],
-                    [0, np.cos(theta), -np.sin(theta)],
-                    [0, np.sin(theta), np.cos(theta)],
-                ]
-            )
-            R_phi = np.array(
-                [
-                    [np.cos(phi), 0, np.sin(phi)],
-                    [0, 1, 0],
-                    [-np.sin(phi), 0, np.cos(phi)],
-                ]
-            )
-            R = R_theta @ R_phi
-
-            # Convert 2D square to 3D
-            square_3d = np.array([[x, y, 0] for x, y in square])
-
-            # Rotate and translate the square
-            square_rotated = np.dot(square_3d, R.T) + np.array(position)
-
-            # Create the polygon and add it to the plot
-            poly = Poly3DCollection(
-                [square_rotated], facecolors=face_colors[idx], edgecolors="black"
-            )
-            ax.add_collection3d(poly)
+    def print_raw_arrays(self):
+        print("\nRaw face arrays:")
+        for face_name, face_array in self.faces.items():
+            print(f"{face_name}: {face_array}")
+        print("\nColor mapping:")
+        for color_name, color_num in self.cube_colors.items():
+            print(f"{color_num}: {color_name}")
 
 
-# ... [Rest of the code remains unchanged] ...
-
-if __name__ == "__main__":
+def main():
     cube = Cube()
-    print("Initial cube state:")
-    print(cube)
-    print("\nIs solved:", cube.is_solved())
+    print("\nWelcome to the Interactive 3D Rubik's Cube!")
+    print("\nValid moves are:")
+    print("F (Front), B (Back), L (Left), R (Right), U (Up), D (Down)")
+    print("\nYou can input:")
+    print("1. A single move (e.g., 'F')")
+    print("2. A move with repetition (e.g., 'U4' for four U moves)")
+    print("3. Multiple moves separated by commas (e.g., 'F, R2, U4')")
+    print("4. Type 'quit' to exit")
 
     # Initial plot
-    cube.plot_cube()
+    cube.plot_3d_cube()
 
-    print("\nPerforming some moves...")
-    # cube.move_right()
-    # cube.move_up()
-    # cube.move_front()
+    while True:
+        moves = input("\nEnter move(s): ").strip()
 
-    print("\nCube state after moves:")
-    print(cube)
-    print("\nIs solved:", cube.is_solved())
+        if moves.lower() == "quit":
+            print("Thanks for playing!")
+            break
 
-    # Keep the plot open
-    plt.ioff()  # Turn off interactive mode
-    plt.show()
+        try:
+            cube.execute_move_sequence(moves)
+            cube.print_raw_arrays()
+
+            print("\nIs solved:", cube.is_solved())
+        except Exception as e:
+            print(f"Error executing moves: {e}")
+            print("Please try again with valid moves")
+
+    plt.ioff()
+    plt.close()
+
+
+if __name__ == "__main__":
+    main()
