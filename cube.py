@@ -17,12 +17,12 @@ class Cube:
         }
 
         self.color_list = [
-            "white",  # 0: White
-            "yellow",  # 1: Yellow
-            "green",  # 2: Green
-            "blue",  # 3: Blue
-            "red",  # 4: Red
-            "orange",  # 5: Orange
+            "#FFFFFF",  # 0: White - pure white
+            "#FFD500",  # 1: Yellow - vibrant yellow
+            "#009B48",  # 2: Green - Rubik's green
+            "#0046AD",  # 3: Blue - Rubik's blue
+            "#B71234",  # 4: Red - Rubik's red
+            "#FF5800",  # 5: Orange - Rubik's orange
         ]
 
         # Initialize solved cube state
@@ -53,6 +53,7 @@ class Cube:
                 alpha=alpha,
                 edgecolor="black",
                 linewidth=0.5,
+                shade=False,
             )
 
         def plot_cube(ax, position, colors):
@@ -74,8 +75,8 @@ class Cube:
                 ),
                 "left": np.array(
                     [
-                        [[x, y, z], [x, y + size, z]],
-                        [[x, y, z + size], [x, y + size, z + size]],
+                        [[x, y + size, z], [x, y, z]],
+                        [[x, y + size, z + size], [x, y, z + size]],
                     ]
                 ),
                 "right": np.array(
@@ -111,8 +112,8 @@ class Cube:
                 "pos": (0, 0, 1),
                 "colors": {
                     "front": self.faces["Front"][0],
-                    "left": self.faces["Left"][0],
-                    "top": self.faces["Up"][2],
+                    "left": self.faces["Left"][1],
+                    "top": self.faces["Up"][2],  # Changed from [2]
                 },
             },
             {
@@ -120,7 +121,7 @@ class Cube:
                 "colors": {
                     "front": self.faces["Front"][1],
                     "right": self.faces["Right"][0],
-                    "top": self.faces["Up"][3],
+                    "top": self.faces["Up"][3],  # Changed from [3]
                 },
             },
             # Front face, bottom row
@@ -128,8 +129,8 @@ class Cube:
                 "pos": (0, 0, 0),
                 "colors": {
                     "front": self.faces["Front"][2],
-                    "left": self.faces["Left"][2],
-                    "bottom": self.faces["Down"][0],
+                    "left": self.faces["Left"][3],
+                    "bottom": self.faces["Down"][0],  # Changed from [0]
                 },
             },
             {
@@ -137,7 +138,7 @@ class Cube:
                 "colors": {
                     "front": self.faces["Front"][3],
                     "right": self.faces["Right"][2],
-                    "bottom": self.faces["Down"][1],
+                    "bottom": self.faces["Down"][1],  # Changed from [1]
                 },
             },
             # Back face, top row
@@ -145,7 +146,7 @@ class Cube:
                 "pos": (0, 1, 1),
                 "colors": {
                     "back": self.faces["Back"][0],
-                    "left": self.faces["Left"][1],
+                    "left": self.faces["Left"][0],
                     "top": self.faces["Up"][0],
                 },
             },
@@ -162,7 +163,7 @@ class Cube:
                 "pos": (0, 1, 0),
                 "colors": {
                     "back": self.faces["Back"][2],
-                    "left": self.faces["Left"][3],
+                    "left": self.faces["Left"][2],
                     "bottom": self.faces["Down"][2],
                 },
             },
@@ -187,11 +188,11 @@ class Cube:
         self.ax.set_xlim(0, 2)
         self.ax.set_ylim(0, 2)
         self.ax.set_zlim(0, 2)
-        self.ax.view_init(elev=20, azim=30)
+        self.ax.view_init(elev=20, azim=-60)
 
         plt.title("2x2x2 Rubik's Cube")
         plt.draw()
-        plt.pause(0.01)
+        plt.pause(0.5)
 
     # [All the existing move methods (move_left, move_right, etc.) remain the same]
     def rotate_face_clockwise(self, face):
@@ -228,13 +229,13 @@ class Cube:
 
         # update the edge pieces
         # up adjacent to back
-        self.faces["Up"][1], self.faces["Up"][3] = back_edge[0], back_edge[1]
+        self.faces["Up"][1], self.faces["Up"][3] = front_edge[0], front_edge[1]
         # up -> front
-        self.faces["Front"][1], self.faces["Front"][3] = up_edge[0], up_edge[1]
+        self.faces["Front"][1], self.faces["Front"][3] = down_edge[0], down_edge[1]
         # front -> down
-        self.faces["Down"][1], self.faces["Down"][3] = front_edge[0], front_edge[1]
+        self.faces["Down"][1], self.faces["Down"][3] = back_edge[0], back_edge[1]
         # down -> back
-        self.faces["Back"][1], self.faces["Back"][3] = down_edge[0], down_edge[1]
+        self.faces["Back"][1], self.faces["Back"][3] = up_edge[0], up_edge[1]
 
         self.plot_3d_cube()
 
