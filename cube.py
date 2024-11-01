@@ -43,16 +43,6 @@ class Cube:
         """Plot the cube in 3D using our previous visualization code"""
         self.ax.cla()  # Clear the current plot
 
-        # Convert face names to match our 3D visualization names
-        face_mapping = {
-            "Up": "top",
-            "Down": "bottom",
-            "Front": "front",
-            "Back": "back",
-            "Left": "left",
-            "Right": "right",
-        }
-
         def plot_colored_face(ax, vertices, color, alpha=1):
             vertices = np.array(vertices)
             ax.plot_surface(
@@ -84,8 +74,8 @@ class Cube:
                 ),
                 "left": np.array(
                     [
-                        [[x, y + size, z], [x, y, z]],
-                        [[x, y + size, z + size], [x, y, z + size]],
+                        [[x, y, z], [x, y + size, z]],
+                        [[x, y, z + size], [x, y + size, z + size]],
                     ]
                 ),
                 "right": np.array(
@@ -121,7 +111,7 @@ class Cube:
                 "pos": (0, 0, 1),
                 "colors": {
                     "front": self.faces["Front"][0],
-                    "left": self.faces["Left"][1],
+                    "left": self.faces["Left"][0],
                     "top": self.faces["Up"][2],
                 },
             },
@@ -138,7 +128,7 @@ class Cube:
                 "pos": (0, 0, 0),
                 "colors": {
                     "front": self.faces["Front"][2],
-                    "left": self.faces["Left"][3],
+                    "left": self.faces["Left"][2],
                     "bottom": self.faces["Down"][0],
                 },
             },
@@ -147,7 +137,7 @@ class Cube:
                 "colors": {
                     "front": self.faces["Front"][3],
                     "right": self.faces["Right"][2],
-                    "bottom": self.faces["Down"][0],
+                    "bottom": self.faces["Down"][1],
                 },
             },
             # Back face, top row
@@ -155,7 +145,7 @@ class Cube:
                 "pos": (0, 1, 1),
                 "colors": {
                     "back": self.faces["Back"][0],
-                    "left": self.faces["Left"][0],
+                    "left": self.faces["Left"][1],
                     "top": self.faces["Up"][0],
                 },
             },
@@ -172,7 +162,7 @@ class Cube:
                 "pos": (0, 1, 0),
                 "colors": {
                     "back": self.faces["Back"][2],
-                    "left": self.faces["Left"][2],
+                    "left": self.faces["Left"][3],
                     "bottom": self.faces["Down"][2],
                 },
             },
@@ -238,13 +228,13 @@ class Cube:
 
         # update the edge pieces
         # up adjacent to back
-        self.faces["Back"][1], self.faces["Back"][3] = up_edge[0], up_edge[1]
-        # back adjacent to down
-        self.faces["Down"][1], self.faces["Down"][3] = back_edge[0], back_edge[1]
-        # down adjacent to front
-        self.faces["Front"][1], self.faces["Front"][3] = down_edge[0], down_edge[1]
-        # front adjacent to up
-        self.faces["Up"][1], self.faces["Up"][3] = front_edge[0], front_edge[1]
+        self.faces["Up"][1], self.faces["Up"][3] = back_edge[0], back_edge[1]
+        # up -> front
+        self.faces["Front"][1], self.faces["Front"][3] = up_edge[0], up_edge[1]
+        # front -> down
+        self.faces["Down"][1], self.faces["Down"][3] = front_edge[0], front_edge[1]
+        # down -> back
+        self.faces["Back"][1], self.faces["Back"][3] = down_edge[0], down_edge[1]
 
         self.plot_3d_cube()
 
@@ -388,6 +378,10 @@ class Cube:
         for color_name, color_num in self.cube_colors.items():
             print(f"{color_num}: {color_name}")
 
+    def is_solved(self):
+        """Check if the cube is solved"""
+        return all(len(set(face)) == 1 for face in self.faces.values())
+
 
 def main():
     cube = Cube()
@@ -412,7 +406,7 @@ def main():
 
         try:
             cube.execute_move_sequence(moves)
-            cube.print_raw_arrays()
+            # cube.print_raw_arrays()
 
             print("\nIs solved:", cube.is_solved())
         except Exception as e:
