@@ -336,31 +336,143 @@ class Cube:
 
         self.plot_3d_cube()
 
+    def move_left_prime(self):
+        """Counterclockwise Left face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Left"])
+
+        # Store the edge pieces
+        up_edge = [self.faces["Up"][0], self.faces["Up"][2]]
+        front_edge = [self.faces["Front"][0], self.faces["Front"][2]]
+        down_edge = [self.faces["Down"][0], self.faces["Down"][2]]
+        back_edge = [self.faces["Back"][0], self.faces["Back"][2]]
+
+        # Update the edge pieces (reverse of clockwise)
+        self.faces["Up"][0], self.faces["Up"][2] = front_edge[0], front_edge[1]
+        self.faces["Front"][0], self.faces["Front"][2] = down_edge[0], down_edge[1]
+        self.faces["Down"][0], self.faces["Down"][2] = back_edge[0], back_edge[1]
+        self.faces["Back"][0], self.faces["Back"][2] = up_edge[0], up_edge[1]
+
+        self.plot_3d_cube()
+
+    def move_right_prime(self):
+        """Counterclockwise Right face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Right"])
+
+        up_edge = [self.faces["Up"][1], self.faces["Up"][3]]
+        front_edge = [self.faces["Front"][1], self.faces["Front"][3]]
+        down_edge = [self.faces["Down"][1], self.faces["Down"][3]]
+        back_edge = [self.faces["Back"][1], self.faces["Back"][3]]
+
+        self.faces["Up"][1], self.faces["Up"][3] = back_edge[0], back_edge[1]
+        self.faces["Back"][1], self.faces["Back"][3] = down_edge[0], down_edge[1]
+        self.faces["Down"][1], self.faces["Down"][3] = front_edge[0], front_edge[1]
+        self.faces["Front"][1], self.faces["Front"][3] = up_edge[0], up_edge[1]
+
+        self.plot_3d_cube()
+
+    def move_up_prime(self):
+        """Counterclockwise Up face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Up"])
+
+        front_edge = [self.faces["Front"][0], self.faces["Front"][1]]
+        right_edge = [self.faces["Right"][0], self.faces["Right"][1]]
+        back_edge = [self.faces["Back"][0], self.faces["Back"][1]]
+        left_edge = [self.faces["Left"][0], self.faces["Left"][1]]
+
+        self.faces["Front"][0], self.faces["Front"][1] = left_edge[0], left_edge[1]
+        self.faces["Right"][0], self.faces["Right"][1] = front_edge[0], front_edge[1]
+        self.faces["Back"][0], self.faces["Back"][1] = right_edge[0], right_edge[1]
+        self.faces["Left"][0], self.faces["Left"][1] = back_edge[0], back_edge[1]
+
+        self.plot_3d_cube()
+
+    def move_down_prime(self):
+        """Counterclockwise Down face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Down"])
+
+        front_edge = [self.faces["Front"][2], self.faces["Front"][3]]
+        right_edge = [self.faces["Right"][2], self.faces["Right"][3]]
+        back_edge = [self.faces["Back"][2], self.faces["Back"][3]]
+        left_edge = [self.faces["Left"][2], self.faces["Left"][3]]
+
+        self.faces["Front"][2], self.faces["Front"][3] = right_edge[0], right_edge[1]
+        self.faces["Right"][2], self.faces["Right"][3] = back_edge[0], back_edge[1]
+        self.faces["Back"][2], self.faces["Back"][3] = left_edge[0], left_edge[1]
+        self.faces["Left"][2], self.faces["Left"][3] = front_edge[0], front_edge[1]
+
+        self.plot_3d_cube()
+
+    def move_front_prime(self):
+        """Counterclockwise Front face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Front"])
+
+        up_edge = [self.faces["Up"][2], self.faces["Up"][3]]
+        right_edge = [self.faces["Right"][0], self.faces["Right"][2]]
+        down_edge = [self.faces["Down"][0], self.faces["Down"][1]]
+        left_edge = [self.faces["Left"][1], self.faces["Left"][3]]
+
+        self.faces["Up"][2], self.faces["Up"][3] = right_edge[0], right_edge[1]
+        self.faces["Right"][0], self.faces["Right"][2] = down_edge[0], down_edge[1]
+        self.faces["Down"][0], self.faces["Down"][1] = left_edge[0], left_edge[1]
+        self.faces["Left"][1], self.faces["Left"][3] = up_edge[0], up_edge[1]
+
+        self.plot_3d_cube()
+
+    def move_back_prime(self):
+        """Counterclockwise Back face rotation"""
+        self.rotate_face_counterclockwise(self.faces["Back"])
+
+        up_edge = [self.faces["Up"][0], self.faces["Up"][1]]
+        left_edge = [self.faces["Left"][0], self.faces["Left"][2]]
+        down_edge = [self.faces["Down"][2], self.faces["Down"][3]]
+        right_edge = [self.faces["Right"][1], self.faces["Right"][3]]
+
+        self.faces["Up"][0], self.faces["Up"][1] = left_edge[0], left_edge[1]
+        self.faces["Left"][0], self.faces["Left"][2] = down_edge[0], down_edge[1]
+        self.faces["Down"][2], self.faces["Down"][3] = right_edge[0], right_edge[1]
+        self.faces["Right"][1], self.faces["Right"][3] = up_edge[0], up_edge[1]
+
+        self.plot_3d_cube()
+
     # [Add all other move methods here with same structure]
 
     def execute_move(self, move):
         """Execute a single move on the cube."""
-        match = re.match(r"([FBLRUD])(\d*)", move.strip().upper())
+        match = re.match(r"([FBLRUD])('?)(\d*)", move.strip().upper())
         if not match:
             print(f"Invalid move: {move}")
             return
 
-        face, repetition = match.groups()
+        face, prime, repetition = match.groups()
         repetition = int(repetition) if repetition else 1
 
         for _ in range(repetition):
-            if face == "F":
-                self.move_front()
-            elif face == "B":
-                self.move_back()
-            elif face == "L":
-                self.move_left()
-            elif face == "R":
-                self.move_right()
-            elif face == "U":
-                self.move_up()
-            elif face == "D":
-                self.move_down()
+            if prime:  # Counterclockwise moves
+                if face == "F":
+                    self.move_front_prime()
+                elif face == "B":
+                    self.move_back_prime()
+                elif face == "L":
+                    self.move_left_prime()
+                elif face == "R":
+                    self.move_right_prime()
+                elif face == "U":
+                    self.move_up_prime()
+                elif face == "D":
+                    self.move_down_prime()
+            else:  # Clockwise moves
+                if face == "F":
+                    self.move_front()
+                elif face == "B":
+                    self.move_back()
+                elif face == "L":
+                    self.move_left()
+                elif face == "R":
+                    self.move_right()
+                elif face == "U":
+                    self.move_up()
+                elif face == "D":
+                    self.move_down()
 
     def execute_move_sequence(self, moves):
         """Execute a sequence of moves on the cube."""
