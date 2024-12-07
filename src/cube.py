@@ -378,28 +378,79 @@ class Cube:
     #     if self.visualize:
     #         self.plot_3d_cube()
     def move_left_prime(self):
-        """Rotate the left face counter-clockwise (equivalent to 3x move_left)."""
-        self.move_left()
-        self.move_left()
-        self.move_left()
+        """Rotate the left face counter-clockwise."""
+        self.rotate_face_counterclockwise(self.faces["Left"])
+
+        a, b = self.faces["Front"][0], self.faces["Front"][2]
+        self.faces["Front"][0], self.faces["Front"][2] = (
+            self.faces["Down"][0],
+            self.faces["Down"][2],
+        )
+        self.faces["Up"][0], self.faces["Up"][2], a, b = (
+            a,
+            b,
+            self.faces["Up"][0],
+            self.faces["Up"][2],
+        )  # Up gets Front's old
+        self.faces["Back"][3], self.faces["Back"][1], a, b = (
+            a,
+            b,
+            self.faces["Back"][3],
+            self.faces["Back"][1],
+        )  # Back gets Up's old
+        self.faces["Down"][0], self.faces["Down"][2] = a, b  # Down gets Back's old
 
         if self.visualize:
             self.plot_3d_cube()
 
     def move_down_prime(self):
-        """Rotate the Down face counterclockwise (equivalent to 3x move_down)."""
-        self.move_down()
-        self.move_down()
-        self.move_down()
+        """Rotate the Down face counterclockwise."""
+        self.rotate_face_counterclockwise(self.faces["Down"])
+
+        a, b = self.faces["Front"][2], self.faces["Front"][3]
+        self.faces["Front"][2], self.faces["Front"][3] = (
+            self.faces["Right"][2],
+            self.faces["Right"][3],
+        )
+        self.faces["Left"][2], self.faces["Left"][3], a, b = (
+            a,
+            b,
+            self.faces["Left"][2],
+            self.faces["Left"][3],
+        )  # Left gets Front's old
+        self.faces["Back"][2], self.faces["Back"][3], a, b = (
+            a,
+            b,
+            self.faces["Back"][2],
+            self.faces["Back"][3],
+        )  # Back gets Left's old
+        self.faces["Right"][2], self.faces["Right"][3] = a, b  # Right gets Back's old
 
         if self.visualize:
             self.plot_3d_cube()
 
     def move_back_prime(self):
-        """Rotate the Back face counterclockwise (equivalent to 3x move_back)."""
-        self.move_back()
-        self.move_back()
-        self.move_back()
+        """Rotate the Back face counterclockwise."""
+        self.rotate_face_counterclockwise(self.faces["Back"])
+
+        a, b = self.faces["Left"][0], self.faces["Left"][2]
+        self.faces["Left"][0], self.faces["Left"][2] = (
+            self.faces["Down"][2],
+            self.faces["Down"][3],
+        )
+        self.faces["Up"][1], self.faces["Up"][0], a, b = (
+            a,
+            b,
+            self.faces["Up"][1],
+            self.faces["Up"][0],
+        )
+        self.faces["Right"][3], self.faces["Right"][1], a, b = (
+            a,
+            b,
+            self.faces["Right"][3],
+            self.faces["Right"][1],
+        )
+        self.faces["Down"][2], self.faces["Down"][3] = a, b
 
         if self.visualize:
             self.plot_3d_cube()
@@ -451,15 +502,43 @@ class Cube:
         """Check if the cube is solved"""
         return all(len(set(face)) == 1 for face in self.faces.values())
 
-    def copy(self):
-        """Create a deep copy of the cube"""
-        new_cube = Cube(visualize=False)  # Create new cube with visualization off
-        # Deep copy the faces dictionary
-        new_cube.faces = {face: list(colors) for face, colors in self.faces.items()}
-        return new_cube
+    import numpy as np
+
+    def one_hot_encode(self):
+        """One-hot encodes the cube state, using two faces per corner."""
+
+        one_hot = np.zeros(84, dtype=np.float32)
+
+        # Define the indices, mirroring the reference code's sticker selection
+        indices = [
+            (
+                0,
+                self.faces["Up"][2],
+            ),  # U face, square index 2 (third element of the list)
+            (1, self.faces["Front"][0]),  # F face, square index 0
+            (2, self.faces["Up"][0]),  # U face, square index 0
+            (3, self.faces["Left"][0]),  # L face, square index 0
+            (4, self.faces["Up"][1]),  # U face, square index 1
+            (5, self.faces["Back"][0]),  # B face, square index 0
+            (6, self.faces["Down"][0]),  # D face, square index 0
+            (7, self.faces["Front"][2]),  # F face, square index 2
+            (8, self.faces["Down"][1]),  # D face, square index 1
+            (9, self.faces["Right"][2]),  # R face, square index 2
+            (10, self.faces["Down"][2]),  # D face, square index 2
+            (11, self.faces["Left"][2]),  # L face, square index 2
+            (12, self.faces["Down"][3]),  # D face, square index 3
+            (13, self.faces["Back"][2]),  # B face, square index 2
+        ]
+
+        # Fill the one-hot vector
+        for i, color in indices:
+            one_hot[i * 6 + color] = 1
+
+        return one_hot
 
 
 def main():
+
     cube = Cube(visualize=True)
     print("\nWelcome to the Interactive 3D Rubik's Cube!")
     print("\nValid moves are:")
