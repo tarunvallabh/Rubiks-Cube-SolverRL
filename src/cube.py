@@ -31,8 +31,8 @@ class Cube:
             "Down": [self.cube_colors["yellow"] for _ in range(4)],
             "Front": [self.cube_colors["green"] for _ in range(4)],
             "Back": [self.cube_colors["blue"] for _ in range(4)],
-            "Left": [self.cube_colors["red"] for _ in range(4)],
-            "Right": [self.cube_colors["orange"] for _ in range(4)],
+            "Left": [self.cube_colors["orange"] for _ in range(4)],
+            "Right": [self.cube_colors["red"] for _ in range(4)],
         }
 
         self.visualize = visualize
@@ -166,7 +166,7 @@ class Cube:
             {
                 "pos": (0, 1, 1),
                 "colors": {
-                    "back": self.faces["Back"][0],
+                    "back": self.faces["Back"][1],
                     "left": self.faces["Left"][0],
                     "top": self.faces["Up"][0],
                 },
@@ -174,7 +174,7 @@ class Cube:
             {
                 "pos": (1, 1, 1),
                 "colors": {
-                    "back": self.faces["Back"][1],
+                    "back": self.faces["Back"][0],
                     "right": self.faces["Right"][1],
                     "top": self.faces["Up"][1],
                 },
@@ -183,7 +183,7 @@ class Cube:
             {
                 "pos": (0, 1, 0),
                 "colors": {
-                    "back": self.faces["Back"][2],
+                    "back": self.faces["Back"][3],
                     "left": self.faces["Left"][2],
                     "bottom": self.faces["Down"][2],
                 },
@@ -191,7 +191,7 @@ class Cube:
             {
                 "pos": (1, 1, 0),
                 "colors": {
-                    "back": self.faces["Back"][3],
+                    "back": self.faces["Back"][2],
                     "right": self.faces["Right"][3],
                     "bottom": self.faces["Down"][3],
                 },
@@ -222,123 +222,184 @@ class Cube:
     def rotate_face_counterclockwise(self, face):
         face[0], face[1], face[2], face[3] = face[1], face[3], face[0], face[2]
 
-    def move_right(self):
-        self.rotate_face_clockwise(self.faces["Right"])
+    def move_left(self):
+        """Rotate the left face clockwise (relative to FRU being fixed)."""
+        self.rotate_face_clockwise(self.faces["Left"])
 
-        # store the edge pieces
-        up_edge = [self.faces["Up"][1], self.faces["Up"][3]]
-        front_edge = [self.faces["Front"][1], self.faces["Front"][3]]
-        down_edge = [self.faces["Down"][1], self.faces["Down"][3]]
-        back_edge = [self.faces["Back"][1], self.faces["Back"][3]]
-
-        # update the edge pieces
-        # up adjacent to back
-        self.faces["Up"][1], self.faces["Up"][3] = front_edge[0], front_edge[1]
-        # up -> front
-        self.faces["Front"][1], self.faces["Front"][3] = down_edge[0], down_edge[1]
-        # front -> down
-        self.faces["Down"][1], self.faces["Down"][3] = back_edge[0], back_edge[1]
-        # down -> back
-        self.faces["Back"][1], self.faces["Back"][3] = up_edge[0], up_edge[1]
-
-        if self.visualize:
-            self.plot_3d_cube()  # Use our 3D visualization instead
-
-        # no need to return self.faces since it is passed by reference
-
-    def move_up(self):
-        self.rotate_face_clockwise(self.faces["Up"])
-
-        # Store the edge pieces
-        front_edge = [self.faces["Front"][0], self.faces["Front"][1]]
-        right_edge = [self.faces["Right"][0], self.faces["Right"][1]]
-        back_edge = [self.faces["Back"][0], self.faces["Back"][1]]
-        left_edge = [self.faces["Left"][0], self.faces["Left"][1]]
-
-        # Update the edge pieces in clockwise order
-        # Front adjacent to Left
-        # Front's top edge goes to Right
-        self.faces["Left"][0], self.faces["Left"][1] = front_edge[0], front_edge[1]
-        # Right's top edge goes to Back
-        self.faces["Back"][0], self.faces["Back"][1] = left_edge[0], left_edge[1]
-        # Back's top edge goes to Left
-        self.faces["Right"][0], self.faces["Right"][1] = back_edge[0], back_edge[1]
-        # Left's top edge goes to Front
-        self.faces["Front"][0], self.faces["Front"][1] = right_edge[0], right_edge[1]
+        # Use temporary variables a and b, exactly like the reference code
+        a, b = (
+            self.faces["Front"][0],
+            self.faces["Front"][2],
+        )  # a, b get Front's left edge
+        self.faces["Front"][0], self.faces["Front"][2] = (
+            self.faces["Up"][0],
+            self.faces["Up"][2],
+        )  # Front gets Up's left edge
+        self.faces["Down"][0], self.faces["Down"][2], a, b = (
+            a,
+            b,
+            self.faces["Down"][0],
+            self.faces["Down"][2],
+        )  # Down gets Front's old edge; a, b get Down's old edge
+        self.faces["Back"][3], self.faces["Back"][1], a, b = (
+            a,
+            b,
+            self.faces["Back"][3],
+            self.faces["Back"][1],
+        )  # Back gets Down's old edge; a, b get Back's old edge
+        self.faces["Up"][0], self.faces["Up"][2] = a, b  # Up gets Back's old edge
 
         if self.visualize:
             self.plot_3d_cube()
 
-    def move_front(self):
-        self.rotate_face_clockwise(self.faces["Front"])
+    # def move_left_prime(self):  # Formerly move_down_prime
+    #     """Rotate the left face counter-clockwise (relative to FRU being fixed)."""
+    #     self.rotate_face_counterclockwise(self.faces["Left"])
 
-        # Store the edge pieces
-        up_edge = [self.faces["Up"][2], self.faces["Up"][3]]
-        right_edge = [self.faces["Right"][0], self.faces["Right"][2]]
-        down_edge = [self.faces["Down"][0], self.faces["Down"][1]]
-        left_edge = [self.faces["Left"][1], self.faces["Left"][3]]
+    #     # Store the edge pieces
+    #     front_edge = (self.faces["Front"][0], self.faces["Front"][2])
+    #     down_edge = (self.faces["Down"][0], self.faces["Down"][2])
+    #     back_edge = (self.faces["Back"][3], self.faces["Back"][1])  # Corrected order
+    #     up_edge = (self.faces["Up"][0], self.faces["Up"][2])
 
-        # Update the edge pieces in clockwise order
-        # Up adjacent to Left
-        # Up's bottom edge goes to Right's left edge
-        self.faces["Right"][0], self.faces["Right"][2] = up_edge[0], up_edge[1]
-        # Right's left edge goes to Down's top edge
-        self.faces["Down"][0], self.faces["Down"][1] = right_edge[0], right_edge[1]
-        # Down's top edge goes to Left's right edge
-        self.faces["Left"][1], self.faces["Left"][3] = down_edge[0], down_edge[1]
-        # Left's right edge goes to Up's bottom edge
-        self.faces["Up"][2], self.faces["Up"][3] = left_edge[0], left_edge[1]
+    #     # Update the edge pieces (counter-clockwise order)
+    #     # Front face's left edge gets Down's left edge
+    #     self.faces["Front"][0], self.faces["Front"][2] = down_edge[0], down_edge[1]
+    #     # Down face's left edge gets Back's right edge
+    #     self.faces["Down"][0], self.faces["Down"][2] = back_edge[0], back_edge[1]
+    #     # Back face's right edge gets Up's left edge
+    #     self.faces["Back"][3], self.faces["Back"][1] = up_edge[1], up_edge[0]
+    #     # Up face's left edge gets Front's left edge
+    #     self.faces["Up"][0], self.faces["Up"][2] = front_edge[0], front_edge[1]
 
-        if self.visualize:
-            self.plot_3d_cube()
+    #     if self.visualize:
+    #         self.plot_3d_cube()
 
-    def move_right_prime(self):
-        """Counterclockwise Right face rotation"""
-        self.rotate_face_counterclockwise(self.faces["Right"])
+    def move_down(self):
+        """Rotate the Down face clockwise (relative to FRU being fixed)."""
+        self.rotate_face_clockwise(self.faces["Down"])
 
-        up_edge = [self.faces["Up"][1], self.faces["Up"][3]]
-        front_edge = [self.faces["Front"][1], self.faces["Front"][3]]
-        down_edge = [self.faces["Down"][1], self.faces["Down"][3]]
-        back_edge = [self.faces["Back"][1], self.faces["Back"][3]]
-
-        self.faces["Up"][1], self.faces["Up"][3] = back_edge[0], back_edge[1]
-        self.faces["Back"][1], self.faces["Back"][3] = down_edge[0], down_edge[1]
-        self.faces["Down"][1], self.faces["Down"][3] = front_edge[0], front_edge[1]
-        self.faces["Front"][1], self.faces["Front"][3] = up_edge[0], up_edge[1]
-
-        if self.visualize:
-            self.plot_3d_cube()
-
-    def move_up_prime(self):
-        """Counterclockwise Up face rotation"""
-        self.rotate_face_counterclockwise(self.faces["Up"])
-
-        front_edge = [self.faces["Front"][0], self.faces["Front"][1]]
-        right_edge = [self.faces["Right"][0], self.faces["Right"][1]]
-        back_edge = [self.faces["Back"][0], self.faces["Back"][1]]
-        left_edge = [self.faces["Left"][0], self.faces["Left"][1]]
-
-        self.faces["Front"][0], self.faces["Front"][1] = left_edge[0], left_edge[1]
-        self.faces["Right"][0], self.faces["Right"][1] = front_edge[0], front_edge[1]
-        self.faces["Back"][0], self.faces["Back"][1] = right_edge[0], right_edge[1]
-        self.faces["Left"][0], self.faces["Left"][1] = back_edge[0], back_edge[1]
+        # Use temporary variables a and b, exactly like the reference code
+        a, b = (
+            self.faces["Front"][2],
+            self.faces["Front"][3],
+        )  # a, b get Front's bottom edge
+        self.faces["Front"][2], self.faces["Front"][3] = (
+            self.faces["Left"][2],
+            self.faces["Left"][3],
+        )  # Front gets Left's bottom edge
+        self.faces["Right"][2], self.faces["Right"][3], a, b = (
+            a,
+            b,
+            self.faces["Right"][2],
+            self.faces["Right"][3],
+        )  # Right gets Front's old edge; a, b get Right's old edge
+        self.faces["Back"][2], self.faces["Back"][3], a, b = (
+            a,
+            b,
+            self.faces["Back"][2],
+            self.faces["Back"][3],
+        )  # Back gets Right's old edge; a, b get Back's old edge
+        self.faces["Left"][2], self.faces["Left"][3] = a, b  # Left gets Back's old edge
 
         if self.visualize:
             self.plot_3d_cube()
 
-    def move_front_prime(self):
-        """Counterclockwise Front face rotation"""
-        self.rotate_face_counterclockwise(self.faces["Front"])
+    # def move_down_prime(self):
+    #     """Rotate the Down face counterclockwise (relative to FRU being fixed)."""
+    #     self.rotate_face_counterclockwise(self.faces["Down"])
 
-        up_edge = [self.faces["Up"][2], self.faces["Up"][3]]
-        right_edge = [self.faces["Right"][0], self.faces["Right"][2]]
-        down_edge = [self.faces["Down"][0], self.faces["Down"][1]]
-        left_edge = [self.faces["Left"][1], self.faces["Left"][3]]
+    #     # Store all edges first
+    #     front_edge = (self.faces["Front"][2], self.faces["Front"][3])
+    #     left_edge = (self.faces["Left"][2], self.faces["Left"][3])
+    #     back_edge = (self.faces["Back"][2], self.faces["Back"][3])
+    #     right_edge = (self.faces["Right"][2], self.faces["Right"][3])
 
-        self.faces["Up"][2], self.faces["Up"][3] = right_edge[0], right_edge[1]
-        self.faces["Right"][0], self.faces["Right"][2] = down_edge[0], down_edge[1]
-        self.faces["Down"][0], self.faces["Down"][1] = left_edge[0], left_edge[1]
-        self.faces["Left"][1], self.faces["Left"][3] = up_edge[0], up_edge[1]
+    #     # Update edges in counterclockwise order
+    #     # Front gets Right's bottom edge
+    #     self.faces["Front"][2], self.faces["Front"][3] = right_edge[0], right_edge[1]
+    #     # Right gets Back's bottom edge
+    #     self.faces["Right"][2], self.faces["Right"][3] = back_edge[0], back_edge[1]
+    #     # Back gets Left's bottom edge
+    #     self.faces["Back"][2], self.faces["Back"][3] = left_edge[0], left_edge[1]
+    #     # Left gets Front's bottom edge
+    #     self.faces["Left"][2], self.faces["Left"][3] = front_edge[0], front_edge[1]
+
+    #     if self.visualize:
+    #         self.plot_3d_cube()
+
+    def move_back(self):
+        """Rotate the Back face clockwise (relative to FRU being fixed)."""
+        self.rotate_face_clockwise(self.faces["Back"])
+
+        # Use temporary variables a and b, exactly like the reference code
+        a, b = (
+            self.faces["Left"][0],
+            self.faces["Left"][2],
+        )  # a, b get Left's top/left edge
+        self.faces["Left"][0], self.faces["Left"][2] = (
+            self.faces["Up"][1],
+            self.faces["Up"][0],
+        )  # Left gets Up's top/right edge
+        self.faces["Down"][2], self.faces["Down"][3], a, b = (
+            a,
+            b,
+            self.faces["Down"][2],
+            self.faces["Down"][3],
+        )  # Down gets Left's old edge; a, b get Down's old edge
+        self.faces["Right"][3], self.faces["Right"][1], a, b = (
+            a,
+            b,
+            self.faces["Right"][3],
+            self.faces["Right"][1],
+        )  # Right gets Down's old edge; a, b get Right's old edge
+        self.faces["Up"][1], self.faces["Up"][0] = a, b  # Up gets Right's old edge
+
+        if self.visualize:
+            self.plot_3d_cube()
+
+    # def move_back_prime(self):
+    #     """Rotate the Back face counterclockwise (relative to FRU being fixed)."""
+    #     self.rotate_face_counterclockwise(self.faces["Back"])
+
+    #     # Store edges first
+    #     up_edge = (self.faces["Up"][0], self.faces["Up"][1])
+    #     left_edge = (self.faces["Left"][0], self.faces["Left"][2])
+    #     down_edge = (self.faces["Down"][2], self.faces["Down"][3])
+    #     right_edge = (self.faces["Right"][1], self.faces["Right"][3])
+
+    #     # Update in counterclockwise order
+    #     self.faces["Up"][0], self.faces["Up"][1] = left_edge[1], left_edge[0]
+    #     self.faces["Right"][1], self.faces["Right"][3] = up_edge[0], up_edge[1]
+
+    #     self.faces["Down"][2], self.faces["Down"][3] = right_edge[1], right_edge[0]
+    #     self.faces["Left"][0], self.faces["Left"][2] = down_edge[0], down_edge[1]
+
+    #     if self.visualize:
+    #         self.plot_3d_cube()
+    def move_left_prime(self):
+        """Rotate the left face counter-clockwise (equivalent to 3x move_left)."""
+        self.move_left()
+        self.move_left()
+        self.move_left()
+
+        if self.visualize:
+            self.plot_3d_cube()
+
+    def move_down_prime(self):
+        """Rotate the Down face counterclockwise (equivalent to 3x move_down)."""
+        self.move_down()
+        self.move_down()
+        self.move_down()
+
+        if self.visualize:
+            self.plot_3d_cube()
+
+    def move_back_prime(self):
+        """Rotate the Back face counterclockwise (equivalent to 3x move_back)."""
+        self.move_back()
+        self.move_back()
+        self.move_back()
 
         if self.visualize:
             self.plot_3d_cube()
@@ -355,19 +416,19 @@ class Cube:
 
         for _ in range(repetition):
             if prime:  # Counterclockwise moves
-                if face == "F":
-                    self.move_front_prime()
-                elif face == "R":
-                    self.move_right_prime()
-                elif face == "U":
-                    self.move_up_prime()
+                if face == "D":
+                    self.move_down_prime()
+                elif face == "L":
+                    self.move_left_prime()
+                elif face == "B":
+                    self.move_back_prime()
             else:  # Clockwise moves
-                if face == "F":
-                    self.move_front()
-                elif face == "R":
-                    self.move_right()
-                elif face == "U":
-                    self.move_up()
+                if face == "B":
+                    self.move_back()
+                elif face == "L":
+                    self.move_left()
+                elif face == "D":
+                    self.move_down()
 
     def execute_move_sequence(self, moves):
         """Execute a sequence of moves on the cube."""
@@ -389,6 +450,13 @@ class Cube:
     def is_solved(self):
         """Check if the cube is solved"""
         return all(len(set(face)) == 1 for face in self.faces.values())
+
+    def copy(self):
+        """Create a deep copy of the cube"""
+        new_cube = Cube(visualize=False)  # Create new cube with visualization off
+        # Deep copy the faces dictionary
+        new_cube.faces = {face: list(colors) for face, colors in self.faces.items()}
+        return new_cube
 
 
 def main():
