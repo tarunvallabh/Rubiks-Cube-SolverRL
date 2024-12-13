@@ -3,6 +3,8 @@ from mpl_toolkits.mplot3d import Axes3D
 import itertools
 import numpy as np
 import re
+import copy
+from moves import Move
 
 
 class Cube:
@@ -252,29 +254,6 @@ class Cube:
         if self.visualize:
             self.plot_3d_cube()
 
-    # def move_left_prime(self):  # Formerly move_down_prime
-    #     """Rotate the left face counter-clockwise (relative to FRU being fixed)."""
-    #     self.rotate_face_counterclockwise(self.faces["Left"])
-
-    #     # Store the edge pieces
-    #     front_edge = (self.faces["Front"][0], self.faces["Front"][2])
-    #     down_edge = (self.faces["Down"][0], self.faces["Down"][2])
-    #     back_edge = (self.faces["Back"][3], self.faces["Back"][1])  # Corrected order
-    #     up_edge = (self.faces["Up"][0], self.faces["Up"][2])
-
-    #     # Update the edge pieces (counter-clockwise order)
-    #     # Front face's left edge gets Down's left edge
-    #     self.faces["Front"][0], self.faces["Front"][2] = down_edge[0], down_edge[1]
-    #     # Down face's left edge gets Back's right edge
-    #     self.faces["Down"][0], self.faces["Down"][2] = back_edge[0], back_edge[1]
-    #     # Back face's right edge gets Up's left edge
-    #     self.faces["Back"][3], self.faces["Back"][1] = up_edge[1], up_edge[0]
-    #     # Up face's left edge gets Front's left edge
-    #     self.faces["Up"][0], self.faces["Up"][2] = front_edge[0], front_edge[1]
-
-    #     if self.visualize:
-    #         self.plot_3d_cube()
-
     def move_down(self):
         """Rotate the Down face clockwise (relative to FRU being fixed)."""
         self.rotate_face_clockwise(self.faces["Down"])
@@ -304,29 +283,6 @@ class Cube:
 
         if self.visualize:
             self.plot_3d_cube()
-
-    # def move_down_prime(self):
-    #     """Rotate the Down face counterclockwise (relative to FRU being fixed)."""
-    #     self.rotate_face_counterclockwise(self.faces["Down"])
-
-    #     # Store all edges first
-    #     front_edge = (self.faces["Front"][2], self.faces["Front"][3])
-    #     left_edge = (self.faces["Left"][2], self.faces["Left"][3])
-    #     back_edge = (self.faces["Back"][2], self.faces["Back"][3])
-    #     right_edge = (self.faces["Right"][2], self.faces["Right"][3])
-
-    #     # Update edges in counterclockwise order
-    #     # Front gets Right's bottom edge
-    #     self.faces["Front"][2], self.faces["Front"][3] = right_edge[0], right_edge[1]
-    #     # Right gets Back's bottom edge
-    #     self.faces["Right"][2], self.faces["Right"][3] = back_edge[0], back_edge[1]
-    #     # Back gets Left's bottom edge
-    #     self.faces["Back"][2], self.faces["Back"][3] = left_edge[0], left_edge[1]
-    #     # Left gets Front's bottom edge
-    #     self.faces["Left"][2], self.faces["Left"][3] = front_edge[0], front_edge[1]
-
-    #     if self.visualize:
-    #         self.plot_3d_cube()
 
     def move_back(self):
         """Rotate the Back face clockwise (relative to FRU being fixed)."""
@@ -358,25 +314,6 @@ class Cube:
         if self.visualize:
             self.plot_3d_cube()
 
-    # def move_back_prime(self):
-    #     """Rotate the Back face counterclockwise (relative to FRU being fixed)."""
-    #     self.rotate_face_counterclockwise(self.faces["Back"])
-
-    #     # Store edges first
-    #     up_edge = (self.faces["Up"][0], self.faces["Up"][1])
-    #     left_edge = (self.faces["Left"][0], self.faces["Left"][2])
-    #     down_edge = (self.faces["Down"][2], self.faces["Down"][3])
-    #     right_edge = (self.faces["Right"][1], self.faces["Right"][3])
-
-    #     # Update in counterclockwise order
-    #     self.faces["Up"][0], self.faces["Up"][1] = left_edge[1], left_edge[0]
-    #     self.faces["Right"][1], self.faces["Right"][3] = up_edge[0], up_edge[1]
-
-    #     self.faces["Down"][2], self.faces["Down"][3] = right_edge[1], right_edge[0]
-    #     self.faces["Left"][0], self.faces["Left"][2] = down_edge[0], down_edge[1]
-
-    #     if self.visualize:
-    #         self.plot_3d_cube()
     def move_left_prime(self):
         """Rotate the left face counter-clockwise."""
         self.rotate_face_counterclockwise(self.faces["Left"])
@@ -465,21 +402,22 @@ class Cube:
         face, prime, repetition = match.groups()
         repetition = int(repetition) if repetition else 1
 
-        for _ in range(repetition):
-            if prime:  # Counterclockwise moves
-                if face == "D":
-                    self.move_down_prime()
-                elif face == "L":
-                    self.move_left_prime()
-                elif face == "B":
-                    self.move_back_prime()
-            else:  # Clockwise moves
-                if face == "B":
-                    self.move_back()
-                elif face == "L":
-                    self.move_left()
-                elif face == "D":
-                    self.move_down()
+        # Map the string input to Move enum
+        move_map = {
+            "L": Move.LEFT,
+            "L'": Move.LEFT_PRIME,
+            "D": Move.DOWN,
+            "D'": Move.DOWN_PRIME,
+            "B": Move.BACK,
+            "B'": Move.BACK_PRIME,
+        }
+
+        move_str = face + prime
+        if move_str in move_map:
+            for _ in range(repetition):
+                self.change_by(move_map[move_str])
+        else:
+            print(f"Invalid move: {move}")
 
     def execute_move_sequence(self, moves):
         """Execute a sequence of moves on the cube."""
@@ -489,6 +427,24 @@ class Cube:
                 self.execute_move(move)
         else:
             self.execute_move(moves)
+
+    def change_by(self, move: Move):
+        """Execute a single move based on the Move enum."""
+        if move == Move.LEFT:
+            self.move_left()
+        elif move == Move.LEFT_PRIME:
+            self.move_left_prime()
+        elif move == Move.DOWN:
+            self.move_down()
+        elif move == Move.DOWN_PRIME:
+            self.move_down_prime()
+        elif move == Move.BACK:
+            self.move_back()
+        elif move == Move.BACK_PRIME:
+            self.move_back_prime()
+        else:
+            assert False, "Invalid move"
+        return self
 
     def print_raw_arrays(self):
         print("\nRaw face arrays:")
@@ -501,8 +457,6 @@ class Cube:
     def is_solved(self):
         """Check if the cube is solved"""
         return all(len(set(face)) == 1 for face in self.faces.values())
-
-    import numpy as np
 
     def one_hot_encode(self):
         """One-hot encodes the cube state, using two faces per corner."""
@@ -536,48 +490,114 @@ class Cube:
 
         return one_hot
 
+    @property
+    def up(self):
+        return self.faces["Up"]
+
+    @property
+    def down(self):
+        return self.faces["Down"]
+
+    @property
+    def front(self):
+        return self.faces["Front"]
+
+    @property
+    def back(self):
+        return self.faces["Back"]
+
+    @property
+    def left(self):
+        return self.faces["Left"]
+
+    @property
+    def right(self):
+        return self.faces["Right"]
+
+    def __eq__(self, other):
+        """Simple equality check that works for both Cube and ImmutableCube"""
+        return isinstance(other, (Cube, ImmutableCube)) and self.faces == other.faces
+
+    def __hash__(self):
+        """Hash implementation matching the reference code"""
+        tuples = [tuple([key.lower()] + values) for key, values in self.faces.items()]
+        return hash(tuple(tuples))
+
+    def copy(self):
+        """Create and return a deep copy of the current cube state."""
+        new_cube = Cube()
+        new_cube.faces = copy.deepcopy(self.faces)
+        return new_cube
+
+
+class ImmutableCube(Cube):
+    """Immutable version of the Cube class"""
+
+    def __init__(self, cube=None):
+        """Initialize from another cube or create a fresh cube"""
+        super().__init__()  # Create fresh cube
+        if cube is not None:
+            self.faces = copy.deepcopy(cube.faces)  # Copy state if cube provided
+
+    def change_by(self, move: Move):
+        """Returns a new ImmutableCube with the move applied."""
+        new_cube = Cube()  # Create regular cube
+        new_cube.faces = copy.deepcopy(self.faces)  # Copy current state
+        new_cube.change_by(move)  # Use regular cube's change_by
+        return ImmutableCube(new_cube)
+
+
+def get_children_of(cube: Cube):
+    """Generate all possible next states from current cube state."""
+    imm = ImmutableCube(cube)  # Create ImmutableCube from existing cube
+    return (imm.change_by(move) for move in Move)
+
 
 def main():
+    cube = Cube()
+    print("\n")
+    print(cube.one_hot_encode())
+    print("\n")
+    cube.print_raw_arrays()
+    print("\n")
 
-    cube = Cube(visualize=True)
-    print("\nWelcome to the Interactive 3D Rubik's Cube!")
-    print("\nValid moves are:")
-    print("F (Front), R (Right), U (Up)")
-    print("Add ' for counterclockwise moves (e.g., F', R', U')")
-    print("\nYou can input:")
-    print("1. A single move (e.g., 'F')")
-    print("2. A move with repetition (e.g., 'U4' for four U moves)")
-    print("3. Multiple moves separated by commas (e.g., 'F, R2, U4')")
-    print("4. Type 'reset' to reset to a fresh cube")
-    print("5. Type 'quit' to exit")
+    # cube = Cube(visualize=True)
+    # print("\nWelcome to the Interactive 3D Rubik's Cube!")
+    # print("\nValid moves are:")
+    # print("L (Left), D (Down), B (Back)")
+    # print("Add ' for counterclockwise moves (e.g., L', D', B')")
+    # print("\nYou can input:")
+    # print("1. A single move (e.g., 'L')")
+    # print("2. A move with repetition (e.g., 'L4' for four U moves)")
+    # print("3. Multiple moves separated by commas (e.g., 'L, D2, B4')")
+    # print("4. Type 'reset' to reset to a fresh cube")
+    # print("5. Type 'quit' to exit")
 
-    # Initial plot
+    # while True:
+    #     moves = input("\nEnter move(s): ").strip()
 
-    while True:
-        moves = input("\nEnter move(s): ").strip()
+    #     if moves == "quit":
+    #         print("Thanks for playing!")
+    #         break
 
-        if moves == "quit":
-            print("Thanks for playing!")
-            break
+    #     if moves == "reset":
+    #         plt.close("all")
+    #         cube = Cube()  # Create fresh cube
+    #         cube.plot_3d_cube()
+    #         print("\nCube reset to initial state")
+    #         continue
 
-        if moves == "reset":
-            plt.close("all")
-            cube = Cube()  # Create fresh cube
-            cube.plot_3d_cube()
-            print("\nCube reset to initial state")
-            continue
+    #     try:
+    #         cube.execute_move_sequence(moves)
+    #         cube.print_raw_arrays()
 
-        try:
-            cube.execute_move_sequence(moves)
-            cube.print_raw_arrays()
+    #         print("\nIs solved:", cube.is_solved())
+    #     except Exception as e:
+    #         print(f"Error executing moves: {e}")
+    #         print("Please try again with valid moves")
 
-            print("\nIs solved:", cube.is_solved())
-        except Exception as e:
-            print(f"Error executing moves: {e}")
-            print("Please try again with valid moves")
-
-    plt.ioff()
-    plt.close()
+    # plt.ioff()
+    # plt.close()
 
 
 if __name__ == "__main__":
