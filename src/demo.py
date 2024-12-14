@@ -4,6 +4,7 @@ import time
 from cube import Cube, ImmutableCube, get_children_of
 from mcts.solver import Solver
 from moves import Move
+import matplotlib.pyplot as plt
 
 
 def generate_random_cube(iterations: int = 6) -> Cube:
@@ -20,7 +21,9 @@ def generate_random_cube(iterations: int = 6) -> Cube:
 
 if __name__ == "__main__":
     print("Loading neural network...")
-    with open("./trained_500.pkl", "rb") as file:
+    with open(
+        "/Users/tarunvallabhaneni/Rubiks-Cube-SolverRL/src/train_torch_500.pkl", "rb"
+    ) as file:
         net = pickle.load(file)
     solver = Solver(net)
 
@@ -63,6 +66,16 @@ if __name__ == "__main__":
                 time.sleep(0.5)
 
             print("\nFinal state solved?", viz_cube.is_solved())
+
+            print("\nVisualization complete. Press Enter to exit.")
+            plt.ion()  # Keep interactive mode on
+            plt.draw()  # Update the display
+
+            # Wait for Enter key
+            input()
+
+            # Clean up
+            plt.close("all")
         else:
             print("\nSolution not applied.")
     else:

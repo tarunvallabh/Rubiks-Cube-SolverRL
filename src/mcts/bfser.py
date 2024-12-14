@@ -9,44 +9,48 @@ class BFSer:
         self._root = root
         assert Cube() in nodes, "Solved cube must be in the set of nodes"
 
-    def get_shortest_path_from(self) -> List[Cube]:
+    def get_shortest_path_from(self):
         self._create_edges()
         self._init_auxiliary()
         self._perform_bfs()
         return self._extract_path()
 
     def _create_edges(self):
-        self._edges = dict()
-        for node in self._nodes:
-            self._edges[node] = [
-                child for child in get_children_of(node) if child in self._nodes
+        self._edges = {}
+        for current in self._nodes:
+            possible_moves = get_children_of(current)
+            self._edges[current] = [
+                move for move in possible_moves if move in self._nodes
             ]
 
     def _init_auxiliary(self):
         self._visited = set()
-        self._parent = dict()
+        self._parent = {}
         self._parent[self._root] = None
 
     def _perform_bfs(self):
-        todo = deque()
-        todo.append(self._root)
+        search_queue = deque([self._root])
         self._visited.add(self._root)
 
-        while todo:
-            current = todo.popleft()
-            for child in self._edges[current]:
-                if child not in self._visited:
-                    self._visited.add(child)
-                    self._parent[child] = current
+        while search_queue:
+            current_state = search_queue.popleft()
+            for next_move in self._edges[current_state]:
+                if next_move not in self._visited:
+                    self._visited.add(next_move)
+                    self._parent[next_move] = current_state
 
-                    if child.is_solved():
+                    if next_move.is_solved():
                         return
-                    todo.append(child)
+                    search_queue.append(next_move)
 
     def _extract_path(self):
-        current = Cube()  # Start from solved cube
-        path = [current]
-        while self._parent[current] is not None:
+        path_states = []
+        current = Cube()
+
+        while True:
+            path_states.append(current)
+            if self._parent[current] is None:
+                break
             current = self._parent[current]
-            path.append(current)
-        return list(reversed(path))
+
+        return list(reversed(path_states))

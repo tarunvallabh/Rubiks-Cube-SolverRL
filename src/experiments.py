@@ -8,6 +8,7 @@ import matplotlib
 matplotlib.use("Agg")  # Use a non-interactive backend
 
 import numpy as np
+import pandas as pd
 
 from cube import Cube
 from moves import Move
@@ -26,7 +27,7 @@ def generate_random_cube(scramble_length: int = 10) -> Cube:
 
 def measure_effectiveness(
     net_path: str, scramble_range: int, num_cubes: int, time_limit: int
-) -> Tuple[List[int], List[float], List[int], float]:
+) -> Tuple[List[int], List[float], List[int], float, List[float], List[int]]:
     """Measures the effectiveness of a trained network on solving random cubes."""
 
     with open(net_path, "rb") as f:
@@ -36,6 +37,10 @@ def measure_effectiveness(
 
     tree_sizes, solve_times, solution_lengths = [], [], []
     success_count = 0
+    # Initialize lists to store data for each cube
+    all_tree_sizes = []
+    all_solve_times = []
+    all_solution_lengths = []
 
     for i in range(num_cubes):
         cube = generate_random_cube(scramble_length=scramble_range)
@@ -45,16 +50,38 @@ def measure_effectiveness(
 
         if solution is not None:
             success_count += 1
-            tree_sizes.append(len(solver._tree))
-            solve_times.append(end_time - start_time)
-            solution_lengths.append(len(solution))
+            tree_size = len(solver._tree)
+            solve_time = end_time - start_time
+            solution_length = len(solution)
+
+            tree_sizes.append(tree_size)
+            solve_times.append(solve_time)
+            solution_lengths.append(solution_length)
+
+            # Store data for this cube
+            all_tree_sizes.append(tree_size)
+            all_solve_times.append(solve_time)
+            all_solution_lengths.append(solution_length)
+        else:
+            # If no solution is found, log a DNF
+            all_tree_sizes.append(np.nan)
+            all_solve_times.append(np.nan)
+            all_solution_lengths.append(np.nan)
 
         # Progress indicator
         if (i + 1) % 10 == 0:  # Print progress every 10 cubes
             print(f"Processed {i + 1} out of {num_cubes} cubes")
 
     success_rate = (success_count / num_cubes) * 100
-    return tree_sizes, solve_times, solution_lengths, success_rate
+    return (
+        tree_sizes,
+        solve_times,
+        solution_lengths,
+        success_rate,
+        all_tree_sizes,
+        all_solve_times,
+        all_solution_lengths,
+    )
 
 
 def plot_stats(
@@ -103,12 +130,12 @@ def plot_stats(
     plt.savefig(
         f"/Users/tarunvallabhaneni/Rubiks-Cube-SolverRL/src/extra/experiment_{scramble_range}.png"
     )
-    print(f"Results saved to results/experiment_{scramble_range}.png")
+    print(f"Results saved to extra/experiment_{scramble_range}.png")
 
 
 if __name__ == "__main__":
     # Experiment parameters
-    NET_PATH = "trained_500.pkl"
+    NET_PATH = "/Users/tarunvallabhaneni/Rubiks-Cube-SolverRL/src/train_torch_500.pkl"
     NUM_CUBES = 50
     TIME_LIMIT = 180
 
@@ -117,11 +144,19 @@ if __name__ == "__main__":
     time_limit = [100, 300, 600, 600]
     # print("Directory exists:", os.path.exists("results"))
 
+    all_data = []  # List to store all experiment data
+
     for i, scramble_range in enumerate(scramble_ranges):
         print(f"\nRunning experiment with scramble range: {scramble_range}")
-        tree_sizes, solve_times, solution_lengths, success_rate = measure_effectiveness(
-            NET_PATH, scramble_range, num_cubes[i], time_limit[i]
-        )
+        (
+            tree_sizes,
+            solve_times,
+            solution_lengths,
+            success_rate,
+            all_tree_sizes,
+            all_solve_times,
+            all_solution_lengths,
+        ) = measure_effectiveness(NET_PATH, scramble_range, num_cubes[i], time_limit[i])
         plot_stats(
             num_cubes[i],
             scramble_range,
@@ -130,5 +165,47 @@ if __name__ == "__main__":
             solution_lengths,
             success_rate,
         )
+
+        # Calculate and print averages
+        avg_tree_size = np.mean(tree_sizes) if tree_sizes else 0
+        avg_solve_time = np.mean(solve_times) if solve_times else 0
+        avg_solution_length = np.mean(solution_lengths) if solution_lengths else 0
+
+        print(f"Average Tree Size: {avg_tree_size:.2f}")
+        print(f"Average Solve Time: {avg_solve_time:.2f} seconds")
+        print(f"Average Solution Length: {avg_solution_length:.2f} moves")
+
+        # Store data for CSV
+        data = {
+            "scramble_range": [scramble_range] * num_cubes[i],
+            "cube_number": list(range(1, num_cubes[i] + 1)),
+            "success": [
+                1 if x is not None and not np.isnan(x) else 0
+                for x in all_solution_lengths
+            ],
+            "solve_time": all_solve_times,
+            "tree_size": all_tree_sizes,
+            "solution_length": all_solution_lengths,
+        }
+
+        all_data.extend(list(zip(*data.values())))
+
+    # Write data to CSV
+    df = pd.DataFrame(
+        all_data,
+        columns=[
+            "scramble_range",
+            "cube_number",
+            "success",
+            "solve_time",
+            "tree_size",
+            "solution_length",
+        ],
+    )
+    df.to_csv(
+        "/Users/tarunvallabhaneni/Rubiks-Cube-SolverRL/src/extra/experiment_data.csv",
+        index=False,
+    )
+    print("Experiment data saved to extra/experiment_data.csv")
 
     print("Experiments completed.")

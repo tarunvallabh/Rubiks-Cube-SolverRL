@@ -6,10 +6,6 @@ import numpy as np
 from typing import Union
 
 
-BODY_LEARNING_RATE = 0.02
-POLICY_LEARNING_RATE = 0.2
-VALUE_LEARNING_RATE = 0.001
-
 POLICY_PROP_FACTOR = 0.3
 VALUE_PROP_FACTOR = 0.7
 
@@ -54,10 +50,14 @@ class PolicyNet(nn.Module):
             nn.ELU(alpha=0.1),
             nn.Linear(sizes[1], sizes[2]),
         )
-        self.softmax = nn.Softmax(dim=1)
+        # self.softmax = nn.Softmax(dim=1)
 
     def forward(self, x):
-        return self.softmax(self.net(x))
+        net_out = self.net(x)
+        # Apply softmax based on input dimensions
+        if len(net_out.shape) == 1:
+            return torch.softmax(net_out, dim=0)
+        return torch.softmax(net_out, dim=1)
 
 
 class FullNet(nn.Module):
@@ -92,6 +92,7 @@ class FullNet(nn.Module):
 
         with torch.no_grad():
             body_out = self.body_net(X_tensor)
+            # print("Body output shape:", body_out.shape)
             values = self.value_net(body_out).squeeze().cpu().tolist()
             policies = self.policy_net(body_out).cpu().tolist()
 

@@ -148,7 +148,7 @@ def train_and_save():
 
     with open(f"train_torch_{ITERATIONS}.pkl", "wb") as f:
         pickle.dump(trainer.net, f)
-    print(f"Training complete! Network saved to trained_2{ITERATIONS}.pkl")
+    print(f"Training complete! Network saved to train_torch_{ITERATIONS}.pkl")
 
     fig, ax1 = plt.subplots()
     ax1.plot(range(len(MSE_COSTS)), MSE_COSTS, color="b")

@@ -553,52 +553,70 @@ def get_children_of(cube: Cube):
     return (imm.change_by(move) for move in Move)
 
 
-def main():
-    cube = Cube()
-    print("\n")
-    print(cube.one_hot_encode())
-    print("\n")
-    cube.print_raw_arrays()
-    print("\n")
+# def main():
+#     pass
+# plt.ion()  # Turn on interactive mode once at the start
+# cube = Cube(visualize=True)
+# cube.plot_3d_cube()
 
-    # cube = Cube(visualize=True)
-    # print("\nWelcome to the Interactive 3D Rubik's Cube!")
-    # print("\nValid moves are:")
-    # print("L (Left), D (Down), B (Back)")
-    # print("Add ' for counterclockwise moves (e.g., L', D', B')")
-    # print("\nYou can input:")
-    # print("1. A single move (e.g., 'L')")
-    # print("2. A move with repetition (e.g., 'L4' for four U moves)")
-    # print("3. Multiple moves separated by commas (e.g., 'L, D2, B4')")
-    # print("4. Type 'reset' to reset to a fresh cube")
-    # print("5. Type 'quit' to exit")
+# while True:
+#     moves = input("\nEnter move(s): ").strip()
 
-    # while True:
-    #     moves = input("\nEnter move(s): ").strip()
+#     if moves == "quit":
+#         print("Thanks for playing!")
+#         break
 
-    #     if moves == "quit":
-    #         print("Thanks for playing!")
-    #         break
+#     if moves == "reset":
+#         cube = Cube(visualize=True)
+#         cube.plot_3d_cube()
+#         print("\nCube reset to initial state")
+#         continue
 
-    #     if moves == "reset":
-    #         plt.close("all")
-    #         cube = Cube()  # Create fresh cube
-    #         cube.plot_3d_cube()
-    #         print("\nCube reset to initial state")
-    #         continue
+#     try:
+#         cube.execute_move_sequence(moves)
+#         print("\nIs solved:", cube.is_solved())
+#     except Exception as e:
+#         print(f"Error executing moves: {e}")
+#         print("Please try again with valid moves")
 
-    #     try:
-    #         cube.execute_move_sequence(moves)
-    #         cube.print_raw_arrays()
+# cube = Cube(visualize=True)
+# print("\nWelcome to the Interactive 3D Rubik's Cube!")
+# print("\nValid moves are:")
+# print("L (Left), D (Down), B (Back)")
+# print("Add ' for counterclockwise moves (e.g., L', D', B')")
+# print("\nYou can input:")
+# print("1. A single move (e.g., 'L')")
+# print("2. A move with repetition (e.g., 'L4' for four U moves)")
+# print("3. Multiple moves separated by commas (e.g., 'L, D2, B4')")
+# print("4. Type 'reset' to reset to a fresh cube")
+# print("5. Type 'quit' to exit")
 
-    #         print("\nIs solved:", cube.is_solved())
-    #     except Exception as e:
-    #         print(f"Error executing moves: {e}")
-    #         print("Please try again with valid moves")
+# while True:
+#     moves = input("\nEnter move(s): ").strip()
 
-    # plt.ioff()
-    # plt.close()
+#     if moves == "quit":
+#         print("Thanks for playing!")
+#         break
+
+#     if moves == "reset":
+#         plt.close("all")
+#         cube = Cube()  # Create fresh cube
+#         cube.plot_3d_cube()
+#         print("\nCube reset to initial state")
+#         continue
+
+#     try:
+#         cube.execute_move_sequence(moves)
+#         cube.print_raw_arrays()
+
+#         print("\nIs solved:", cube.is_solved())
+#     except Exception as e:
+#         print(f"Error executing moves: {e}")
+#         print("Please try again with valid moves")
+
+# plt.ioff()
+# plt.close()
 
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()

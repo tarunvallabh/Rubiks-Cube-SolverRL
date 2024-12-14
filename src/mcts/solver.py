@@ -1,8 +1,7 @@
 import threading
-from typing import List, Iterable, Union
 import numpy as np
 
-from adi.fullnet import FullNet
+from adi.fullnet2 import FullNet
 from cube import Cube, ImmutableCube, get_children_of
 from moves import Move
 from mcts.bfser import BFSer
@@ -10,7 +9,7 @@ from mcts.node_info import NodeInfo
 
 
 class Solver:
-    def __init__(self, net: FullNet):
+    def __init__(self, net):
         self._net = net
         self._set_hyper()
 
@@ -18,96 +17,85 @@ class Solver:
         self._loss_step = 0.1
         self._exploration_factor = 2.0
 
-    def solve(
-        self, root: Cube, timeout: Union[int, None] = None
-    ) -> Union[List[Move], None]:
-        # print("\nStarting solve method...")
-        # print("Input cube is_solved():", root.is_solved())
-
+    def solve(self, root, timeout=None):
         self._stop = threading.Event()
         if root.is_solved():
-            print("Cube is already solved, returning empty move list")
             return []
 
-        # print("\nInitializing tree...")
         self._initialize_tree(root)
         self._backup_stack = []
-
-        # Debug hash values
-        # print("Original cube hash:", hash(root))
-        # print("Tree keys:", [hash(k) for k in self._tree.keys()])
-
-        root = ImmutableCube(root)
-        # print("ImmutableCube hash:", hash(root))
-        # print("Is original in tree?", root in self._tree)
-        # print("Tree size:", len(self._tree))
+        start = ImmutableCube(root)
 
         if timeout is not None:
-            timer = threading.Timer(timeout, lambda: self._stop.set())
+            timer = threading.Timer(timeout, self._stop.set)
             timer.daemon = True
             timer.start()
 
         count = 0
         while not self._stop.is_set():
-            # print(f"\nTraversal {count}...")
-            if root not in self._tree:
-                print("ERROR: Root not in tree!")
-                print("Current tree keys:", [hash(k) for k in self._tree.keys()])
+            if start not in self._tree:
                 return None
 
-            if self._traverse_for_solved(root):
-                # print(f"Solution found in {count} iterations!")
+            if self._traverse_for_solved(start):
                 return self._extract_final_sequence(root)
             self._backup()
             count += 1
 
         return None
 
-    def _initialize_tree(self, root: Cube):
-        self._tree = dict()
-        policy = self._net.evaluate(root.one_hot_encode().T)[0].policy
-        self._tree[root] = NodeInfo.create_new(policy)
+    def _initialize_tree(self, root):
+        self._tree = {}
+        net_output = self._net.evaluate(root.one_hot_encode().T)[0].policy
+        self._tree[root] = NodeInfo.create_new(net_output)
 
-    def _traverse_for_solved(self, current: ImmutableCube) -> bool:
-        assert current in self._tree
-        if self._tree[current].is_leaf:
-            self._backup_stack.append((current, None))
-            self._expand_from(current)
-            return any((child.is_solved() for child in get_children_of(current)))
-        best_move = self._tree[current].get_best_action(self._exploration_factor)
-        self._tree[current].update_virtual_loss(best_move, self._loss_step)
+    def _traverse_for_solved(self, pos):
+        if pos not in self._tree:
+            return False
 
-        self._backup_stack.append((current, best_move))
-        return self._traverse_for_solved(
-            ImmutableCube(current.change_by(list(Move)[best_move]))
-        )
+        node = self._tree[pos]
+        if node.is_leaf:
+            self._backup_stack.append((pos, None))
+            self._expand_from(pos)
+            kids = get_children_of(pos)
+            return any(cube.is_solved() for cube in kids)
+
+        move = node.get_best_action(self._exploration_factor)
+        node.update_virtual_loss(move, self._loss_step)
+
+        self._backup_stack.append((pos, move))
+        next_pos = ImmutableCube(pos.change_by(list(Move)[move]))
+        return self._traverse_for_solved(next_pos)
 
     def _backup(self):
-        last_state = self._backup_stack[-1][0]
-        propagation_value = self._net.evaluate(last_state.one_hot_encode().T)[0].value
-        for state, move in self._backup_stack[:-1]:
-            self._tree[state].update_on_backup(move, self._loss_step, propagation_value)
+        last_pos = self._backup_stack[-1][0]
+        value = self._net.evaluate(last_pos.one_hot_encode().T)[0].value
+
+        for pos, move in self._backup_stack[:-1]:
+            self._tree[pos].update_on_backup(move, self._loss_step, value)
+
         self._backup_stack.clear()
 
-    def _extract_final_sequence(self, root: Cube) -> List[Move]:
-        path = BFSer(root, set(self._tree.keys())).get_shortest_path_from()
+    def _extract_final_sequence(self, root):
+        visited = set(self._tree.keys())
+        path = BFSer(root, visited).get_shortest_path_from()
         return list(self._extract_moves(path))
 
-    def _extract_moves(self, path: List[Cube]) -> Iterable[Move]:
-        for cur, next in zip(path[:-1], path[1:]):
-            imm = ImmutableCube(cur)
+    def _extract_moves(self, path):
+        for curr, next in zip(path[:-1], path[1:]):
+            pos = ImmutableCube(curr)
             for move in list(Move):
-                if imm.change_by(move) == next:
+                if pos.change_by(move) == next:
                     yield move
                     break
 
-    def _expand_from(self, current: Cube):
-        children = list(get_children_of(current))
-        children_evals = self._net.evaluate(
-            np.array([child.one_hot_encode() for child in children]).T
+    def _expand_from(self, pos):
+        next_states = list(get_children_of(pos))
+        outputs = self._net.evaluate(
+            np.array([state.one_hot_encode() for state in next_states]).T
         )
-        children_policies = [eval.policy for eval in children_evals]
-        for child, policy in zip(children, children_policies):
-            if child not in self._tree:
-                self._tree[child] = NodeInfo.create_new(policy)
-        self._tree[current] = self._tree[current]._replace(is_leaf=False)
+
+        for next_state, result in zip(next_states, outputs):
+            if next_state not in self._tree:
+                self._tree[next_state] = NodeInfo.create_new(result.policy)
+
+        self._tree[pos] = self._tree[pos]._replace(is_leaf=False)
